@@ -2,7 +2,7 @@ import type {
   ActionFunctionArgs,
   LoaderFunctionArgs,
   MetaFunction,
-} from "@remix-run/node";
+} from "@remix-run/cloudflare";
 import { Form, Link, json, redirect, useLoaderData } from "@remix-run/react";
 import invariant from "tiny-invariant";
 import SearchForm from "~/components/SearchForm";
