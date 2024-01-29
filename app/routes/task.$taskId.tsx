@@ -9,7 +9,7 @@ import {
 } from "@remix-run/react";
 
 import { getTask, updateTweet, updateTask } from "~/mocks/task";
-import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import invariant from "tiny-invariant";
 import { CompleteButton } from "~/components/CompleteButton";
 import { useState } from "react";
