@@ -6,33 +6,56 @@ import type {
 import { Form, Link, json, redirect, useLoaderData } from "@remix-run/react";
 import invariant from "tiny-invariant";
 import SearchForm from "~/components/SearchForm";
-import { createTask, getTasks } from "~/mocks/task";
+import { TaskRecord, getNewTaskId } from "~/mocks/task";
+
+interface Env {
+  DB: D1Database;
+}
 
 export const meta: MetaFunction = () => {
   return [{ name: "title", content: "タスク一覧" }];
 };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ context, request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const q = url.searchParams.get("q") ?? "";
-  const tasks = await getTasks(q);
+  const env = context.env as Env;
+  let query = "SELECT * FROM tasks";
+  const params: string[] = [];
+
+  if (q) {
+    // 検索クエリが指定されている場合、WHERE句で絞り込み
+    query += " WHERE title LIKE ? OR description LIKE ?";
+    // SQLのLIKE句で部分一致を行うためには、検索文字列の前後に%を追加
+    params.push(`%${q}%`, `%${q}%`);
+  }
+
+  query += " ORDER BY createdAt DESC";
+
+  const { results: tasks } = await env.DB.prepare(query)
+    .bind(...params)
+    .all<TaskRecord>();
+
   return json({ tasks, q });
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ context, request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const title = formData.get("title");
   if (!title) {
     return json({ error: "タイトルを入力してください" }, { status: 400 });
   }
   invariant(typeof title === "string", "title must be a string");
-  const newTask = await createTask({
-    title,
-    description: "",
-    completed: false,
-    tweets: [],
-  });
-  return redirect(`/task/${newTask.id}/edit`);
+
+  const env = context.env as Env;
+  const newTaskId = getNewTaskId();
+  await env.DB.prepare(
+    "INSERT INTO tasks (id, title, description, completed, createdAt) VALUES (?, ?, ?, ?, ?)"
+  )
+    .bind(newTaskId, title, "", "false", new Date().toISOString())
+    .run();
+
+  return redirect(`/task/${newTaskId}/edit`);
 };
 
 export default function Task() {

@@ -1,5 +1,5 @@
 import { cssBundleHref } from "@remix-run/css-bundle";
-import type { LinksFunction, MetaFunction } from "@remix-run/cloudflare";
+import { type LinksFunction, type MetaFunction } from "@remix-run/cloudflare";
 import {
   Link,
   Links,
@@ -13,6 +13,10 @@ import {
 } from "@remix-run/react";
 import appStylesHref from "./styles/app.css";
 import logo from "./images/logo.png";
+
+interface Env {
+  DB: D1Database;
+}
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: appStylesHref },

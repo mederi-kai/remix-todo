@@ -1,9 +1,3 @@
-import invariant from "tiny-invariant";
-import { matchSorter } from "match-sorter";
-// @ts-expect-error - no types, but it's a tiny function
-import sortBy from "sort-by";
-import { sleep } from "~/libs/util";
-
 export type TaskMutation = {
   id?: string;
   title?: string;
@@ -16,7 +10,27 @@ export type TaskMutation = {
 
 export type TaskRecord = Omit<TaskMutation, "id"> & { id: string };
 
-export const fakeTasks = {
+export const getNewTaskId = (values?: TaskMutation) => {
+  return values?.id ?? `task-${Math.random().toString(36).substring(2, 9)}`;
+};
+
+export const getNewTweetId = (values?: TaskMutation) => {
+  return values?.id ?? `tweet-${Math.random().toString(36).substring(2, 9)}`;
+};
+
+export const formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat("ja-jp", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(date);
+};
+
+/*
+const fakeTasks = {
   records: {} as Record<string, TaskRecord>,
 
   async getAll(): Promise<TaskRecord[]> {
@@ -96,22 +110,6 @@ export async function updateTweet(id: string, note: string) {
   });
   return task;
 }
-
-export const getNewTaskId = (values?: TaskMutation) => {
-  return values?.id ?? `task-${Math.random().toString(36).substring(2, 9)}`;
-};
-
-export const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("ja-jp", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
-};
-
 const sampleTasks: TaskMutation[] = [
   {
     title: "運動タスク🏋️",
@@ -143,3 +141,4 @@ export const initializeTask = () => {
 };
 
 initializeTask();
+*/

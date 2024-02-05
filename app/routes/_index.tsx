@@ -12,14 +12,19 @@ import {
   useLoaderData,
 } from "@remix-run/react";
 import { sleep } from "~/libs/util";
-import { getTasks } from "~/mocks/task";
+import { TaskRecord } from "~/mocks/task";
+
+interface Env {
+  DB: D1Database;
+}
 
 // GET処理
-export const loader = async ({ params }: LoaderFunctionArgs) => {
-  // dynamic route params
-  console.log(params);
-  const tasks = await getTasks();
-  return json({ tasks });
+export const loader = async ({ context }: LoaderFunctionArgs) => {
+  const env = context.env as Env;
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM tasks"
+  ).all<TaskRecord>();
+  return json({ tasks: results });
 };
 
 // POST処理
