@@ -11,35 +11,22 @@ import {
 } from "@remix-run/react";
 import invariant from "tiny-invariant";
 
+import { getTask, updateTask } from "~/mocks/task";
+
 // ※ task.$taskId_.edit.tsx とすることで、親コンポーネントの task.$taskId.tsx のレイアウトは引き継がれない
 // ※ task.$taskId.edit.tsx とすると、親コンポーネントの task.$taskId.tsx のレイアウトは引き継がれる
 
-interface Env {
-  DB: D1Database;
-}
-
-export const loader = async ({ context, params }: LoaderFunctionArgs) => {
+export const loader = async ({ params }: LoaderFunctionArgs) => {
   // validating params
   invariant(params.taskId, "Missing taskId param");
-  const env = context.env as Env;
-  // const task = await getTask(params.taskId);
-  const { results } = await env.DB.prepare("SELECT * FROM tasks WHERE id = ?")
-    .bind(params.taskId)
-    .run();
-
-  const task = results[0];
-
+  const task = await getTask(params.taskId);
   if (!task) {
     throw new Response("Not Found", { status: 404 });
   }
   return json({ task });
 };
 
-export const action = async ({
-  context,
-  params,
-  request,
-}: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // validating params
   invariant(params.taskId, "Missing taskId param");
   const formData = await request.formData();
@@ -61,14 +48,8 @@ export const action = async ({
 
   invariant(typeof title === "string", "title must be a string");
   invariant(typeof description === "string", "slug must be a string");
-  const env = context.env as Env;
-  await env.DB.prepare(
-    "UPDATE tasks SET title = ?, description = ?, updatedAt = ? WHERE id = ?"
-  )
-    .bind(title, description, new Date().toISOString(), params.taskId)
-    .run();
 
-  // await updateTask(params.taskId, { title, description });
+  await updateTask(params.taskId, { title, description });
   return redirect(`/task/${params.taskId}`);
 };
 
@@ -89,7 +70,7 @@ export default function EditTask() {
             ) : null}
           </div>
           <input
-            defaultValue={typeof task.title === "string" ? task.title : ""}
+            defaultValue={task.title}
             aria-label="title"
             name="title" // formData
             type="text"
@@ -105,9 +86,7 @@ export default function EditTask() {
             ) : null}
           </div>
           <textarea
-            defaultValue={
-              typeof task.description === "string" ? task.description : ""
-            }
+            defaultValue={task.description}
             aria-label="description"
             name="description"
             placeholder="タスクの概要を入力してください"
