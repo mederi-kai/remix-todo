@@ -14,10 +14,6 @@ import {
 import appStylesHref from "./styles/app.css";
 import logo from "./images/logo.png";
 
-interface Env {
-  DB: D1Database;
-}
-
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: appStylesHref },
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
