@@ -8,85 +8,39 @@ import {
   useSubmit,
 } from "@remix-run/react";
 
-import {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  redirect,
-} from "@remix-run/cloudflare";
+import { getTask, updateTweet, updateTask } from "~/mocks/task";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import invariant from "tiny-invariant";
 import { CompleteButton } from "~/components/CompleteButton";
 import { useState } from "react";
-import { TaskRecord, getNewTweetId } from "~/mocks/task";
 
-interface Env {
-  DB: D1Database;
-}
-
-export const loader = async ({ context, params }: LoaderFunctionArgs) => {
+export const loader = async ({ params }: LoaderFunctionArgs) => {
   invariant(params.taskId, "Missing taskId param");
-  const env = context.env as Env;
-  const { results } = await env.DB.prepare("SELECT * FROM tasks WHERE id = ?")
-    .bind(params.taskId)
-    .run();
-
-  const { results: tweets } = await env.DB.prepare(
-    "SELECT * FROM tweets WHERE task_id = ? ORDER BY createdAt DESC"
-  )
-    .bind(params.taskId)
-    .run();
-
-  if (results.length === 0) {
+  const task = await getTask(params.taskId);
+  if (!task) {
     throw new Response("Not Found", { status: 404 });
   }
-  return json({
-    task: {
-      ...results[0],
-      tweets: tweets.map((t) => t.content),
-    } as TaskRecord & { tweets: string },
-  });
+  return json({ task });
 };
 
-export const action = async ({
-  params,
-  request,
-  context,
-}: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   invariant(params.taskId, "Missing taskId param");
   const formData = await request.formData();
 
   switch (request.method) {
     case "POST": {
       // tweetの更新
-      const content = formData.get("content");
-      invariant(content, "Missing text param");
-      invariant(typeof content === "string", "tweet must be a string");
-      // update tweet
-      const env = context.env as Env;
-      const tweetId = getNewTweetId();
-      await env.DB.prepare(
-        "INSERT INTO tweets (id, task_id, content, createdAt) VALUES (?, ?, ?, ?)"
-      )
-        .bind(tweetId, params.taskId, content, new Date().toISOString())
-        .run();
-      return redirect(`/task/${params.taskId}`);
+      const tweet = formData.get("tweet");
+      invariant(tweet, "Missing tweet param");
+      invariant(typeof tweet === "string", "tweet must be a string");
+      return updateTweet(params.taskId, tweet);
     }
 
     case "PUT": {
       // 完了状態の更新
-      const env = context.env as Env;
-
-      // update task
-      await env.DB.prepare(
-        "UPDATE tasks SET completed = ?, updatedAt = ? WHERE id = ?"
-      )
-        .bind(
-          formData.get("completed"),
-          new Date().toISOString(),
-          params.taskId
-        )
-        .run();
-
-      return redirect(`/task/${params.taskId}`);
+      return updateTask(params.taskId, {
+        completed: formData.get("completed") === "true",
+      });
     }
     default:
       return json("許可されていないメソッドです");
@@ -99,7 +53,7 @@ export default function Contact() {
   const fetcher = useFetcher<typeof action>();
 
   const tweets = fetcher.formData
-    ? [fetcher.formData.get("content") as string, ...(task.tweets ?? [])]
+    ? [fetcher.formData.get("tweet") as string, ...(task.tweets ?? [])]
     : task.tweets;
 
   const [inputValue, setInputValue] = useState<string>("");
@@ -163,7 +117,7 @@ export default function Contact() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               aria-label="tweet"
-              name="content"
+              name="tweet"
               className="flex-1"
               placeholder="ツイート"
             />

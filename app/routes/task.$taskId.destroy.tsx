@@ -1,19 +1,10 @@
 import type { ActionFunctionArgs } from "@remix-run/cloudflare";
 import { redirect } from "@remix-run/cloudflare";
 import invariant from "tiny-invariant";
+import { deleteTask } from "~/mocks/task";
 
-interface Env {
-  DB: D1Database;
-}
-
-export const action = async ({ context, params }: ActionFunctionArgs) => {
+export const action = async ({ params }: ActionFunctionArgs) => {
   invariant(params.taskId, "Missing taskId param");
-  const env = context.env as Env;
-  await env.DB.prepare("DELETE FROM tweets WHERE task_id = ?")
-    .bind(params.taskId)
-    .run();
-  await env.DB.prepare("DELETE FROM tasks WHERE id = ?")
-    .bind(params.taskId)
-    .run();
+  await deleteTask(params.taskId);
   return redirect("/task");
 };
